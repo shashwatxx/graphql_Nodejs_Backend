@@ -3,10 +3,9 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const path = require('path');
 const multer = require('multer');
-
-
-const feedRoutes = require('./routes/feed');
-const authRoutes = require('./routes/auth');
+const graphqlexpress = require('express-graphql');
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
 
 
 const app = express();
@@ -43,8 +42,10 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
+app.use('/graphql', graphqlexpress.graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver
+}));
 
 
 app.use((error, req, res, next) => {
@@ -58,11 +59,6 @@ app.use((error, req, res, next) => {
 
 mongoose.connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true })
     .then(result => {
-        console.log("Connected To DataBase");
-        const server = app.listen(8080);
-        const io = require('./socket').init(server);
-        io.on('connection', socket => {
-            console.log("Client Connected");
-        });
+        app.listen(8080);
     })
     .catch(err => console.log(err));

@@ -2,12 +2,13 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const path = require('path');
+
 const multer = require('multer');
 const graphqlexpress = require('express-graphql');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
 const auth = require('./middleware/auth');
-
+const { clearImage } = require('./utils/file');
 
 const app = express();
 const fileStorage = multer.diskStorage({
@@ -46,6 +47,25 @@ app.use((req, res, next) => {
     next();
 });
 app.use(auth);
+app.put('/post-image', (req, res, next) => {
+    if (!req.isAuth) {
+        throw new Error("Not AUTHENTICATED");
+    }
+
+
+    if (!req.file) {
+        return res.status(200).json({ message: "No file Provided" });
+    }
+    if (req.body.oldPath) {
+        clearImage(req.body.oldPath);
+    }
+    return res.status(201)
+        .json({ message: 'File Uploaded', filePath: req.file.path });
+
+
+});
+
+
 
 app.use('/graphql', graphqlexpress.graphqlHTTP({
     schema: graphqlSchema,
@@ -77,3 +97,4 @@ mongoose.connect(MONGODB_URI, { useUnifiedTopology: true, useNewUrlParser: true 
         app.listen(8080);
     })
     .catch(err => console.log(err));
+
